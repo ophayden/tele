@@ -1,46 +1,4 @@
-#!/usr/bin/env python
-"""\
-
-Stream g-code to grbl controller
-
-This script differs from the simple_stream.py script by 
-tracking the number of characters in grbl's serial read
-buffer. This allows grbl to fetch the next line directly
-from the serial buffer and does not have to wait for a 
-response from the computer. This effectively adds another
-buffer layer to prevent buffer starvation.
-
-CHANGELOG:
-- 20140714: Updated baud rate to 115200. Added a settings
-  write mode via simple streaming method. MIT-licensed.
-
-TODO: 
-- Add runtime command capabilities
-
----------------------
-The MIT License (MIT)
-
-Copyright (c) 2012-2014 Sungeun K. Jeon
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
----------------------
-"""
+#!/home/op/anaconda3/
 
 import serial
 import re
@@ -79,7 +37,7 @@ settings_mode = False
 if args.settings : settings_mode = True
 
 # Wake up grbl
-print "Initializing grbl..."
+print("Initializing grbl...")
 s.write("\r\n\r\n")
 
 # Wait for grbl to initialize and flush startup text in serial input
@@ -91,15 +49,15 @@ l_count = 0
 if settings_mode:
     # Send settings file via simple call-response streaming method. Settings must be streamed
     # in this manner since the EEPROM accessing cycles shut-off the serial interrupt.
-    print "SETTINGS MODE: Streaming", args.gcode_file.name, " to ", args.device_file
+    print("SETTINGS MODE: Streaming", args.gcode_file.name, " to ", args.device_file)
     for line in f:
         l_count += 1 # Iterate line counter    
         # l_block = re.sub('\s|\(.*?\)','',line).upper() # Strip comments/spaces/new line and capitalize
         l_block = line.strip() # Strip all EOL characters for consistency
-        if verbose: print 'SND: ' + str(l_count) + ':' + l_block,
+        if verbose: print('SND: ' + str(l_count) + ':' + l_block, end=' ')
         s.write(l_block + '\n') # Send g-code block to grbl
         grbl_out = s.readline().strip() # Wait for grbl response with carriage return
-        if verbose: print 'REC:',grbl_out
+        if verbose: print('REC:',grbl_out)
 else:    
     # Send g-code program via a more agressive streaming protocol that forces characters into
     # Grbl's serial read buffer to ensure Grbl has immediate access to the next g-code command
@@ -118,20 +76,20 @@ else:
         while sum(c_line) >= RX_BUFFER_SIZE-1 | s.inWaiting() :
             out_temp = s.readline().strip() # Wait for grbl response
             if out_temp.find('ok') < 0 and out_temp.find('error') < 0 :
-                print "  Debug: ",out_temp # Debug response
+                print("  Debug: ",out_temp) # Debug response
             else :
                 grbl_out += out_temp;
                 g_count += 1 # Iterate g-code counter
                 grbl_out += str(g_count); # Add line finished indicator
                 del c_line[0] # Delete the block character count corresponding to the last 'ok'
-        if verbose: print "SND: " + str(l_count) + " : " + l_block,
+        if verbose: print("SND: " + str(l_count) + " : " + l_block, end=' ')
         s.write(l_block + '\n') # Send g-code block to grbl
-        if verbose : print "BUF:",str(sum(c_line)),"REC:",grbl_out
+        if verbose : print("BUF:",str(sum(c_line)),"REC:",grbl_out)
 
 # Wait for user input after streaming is completed
-print "G-code streaming finished!\n"
-print "WARNING: Wait until grbl completes buffered g-code blocks before exiting."
-raw_input("  Press <Enter> to exit and disable grbl.") 
+print("G-code streaming finished!\n")
+print("WARNING: Wait until grbl completes buffered g-code blocks before exiting.")
+input("  Press <Enter> to exit and disable grbl.") 
 
 # Close file and serial port
 f.close()
